@@ -1,0 +1,12 @@
+node_modules/
+.env
+.env.*
+!.env.example
+generated/
+dist/
+*.db*
+*.sqlite*
+*.tsbuildinfo
+npm-debug.*
+.DS_Store
+Seguimiento de desarrollo.md
