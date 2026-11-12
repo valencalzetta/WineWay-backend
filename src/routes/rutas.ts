@@ -196,9 +196,11 @@ export function rutasItinerarios(db: DB) {
     });
     res.status(201).json(presentarRuta(ruta));
   });
+  
   r.get('/:id', async (req, res) =>
     res.json(presentarRuta(await propia(db, id.parse(req.params.id), req.usuarioId))),
   );
+  
   r.post('/', async (req, res) => {
     const { visitas, ...datos } = datosRuta
       .extend({ visitas: z.array(datosVisita).min(1).max(500) })

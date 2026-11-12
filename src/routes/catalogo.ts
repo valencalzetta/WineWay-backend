@@ -55,6 +55,7 @@ export function rutasCatalogo(db: DB) {
     });
   });
   r.get('/bodegas', async (req, res) => {
+    //Zod toma req.query, valida su contenido y devuelve el resultado en q.
     const q = z
       .object({
         pagina: z.coerce.number().int().min(1).default(1),
@@ -89,6 +90,8 @@ export function rutasCatalogo(db: DB) {
         'La distancia requiere un punto de referencia.',
       )
       .parse(req.query);
+
+    // where: objeto con las condiciones que Prisma aplicará al consultar la base.
     const where: Prisma.BodegaWhereInput = { activa: true, zona: q.zona, tipo: q.tipo };
     if (q.busqueda)
       where.OR = [{ nombre: { contains: q.busqueda } }, { localidad: { contains: q.busqueda } }];
@@ -111,7 +114,7 @@ export function rutasCatalogo(db: DB) {
     const todos = (
       await db.bodega.findMany({ where, include: incluirBodega, orderBy: { nombre: 'asc' } })
     )
-      .map((b) => ({
+     .map((b) => ({
         ...presentarBodega(b),
         distanciaKm: q.lat === undefined ? null : distancia(q.lat, q.lng!, b.latitud, b.longitud),
       }))

@@ -22,6 +22,7 @@ export function rutasCalendarios(db: DB) {
   r.post('/calendarios', exigirSesion(db), (req, res) => {
     const { contenido } = datosCalendario.parse(req.body);
     const clave = almacen.guardar(req.usuarioId, contenido);
+    //responder al frontend con un enlace construido usando esa clave momentanea. despues el frontend puede usar ese enlace para descargar el archivo de calendario. La clave es aleatoria y expira en 10 minutos. Lo hace llamando a la segunda ruta GET /calendarios/:archivo que se define abajo. Esa ruta valida la clave y devuelve el contenido del calendario si es válido, o un error 404 si no lo es.
     res.set('Cache-Control', 'no-store').status(201).json({ path: `/calendarios/${clave}.ics` });
   });
   // Safari/Calendario no envían la cabecera de sesión de Expo. La clave aleatoria

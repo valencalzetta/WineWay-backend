@@ -6,6 +6,7 @@ import { esMayorDeEdad, fechaCalendario, fechaLocal } from '../utils/reglas.js';
 import { hashPassword, verificarPassword, nuevoToken, hashToken } from '../utils/seguridad.js';
 declare module 'express-serve-static-core' {
   interface Request {
+    //sale del id del usuario de la sesión activa (obtenido del contrato sesion), que se obtiene del token de autorización
     usuarioId: string;
   }
 }
@@ -61,6 +62,7 @@ const datosUsuario = z
   .strict();
 
 type Identificadores = { email?: string; username?: string };
+//excluirId?: un ID opcional para excluir a un usuario de la búsqueda. Sirve cuando alguien edita su propio perfil
 async function camposOcupados(db: DB, datos: Identificadores, excluirId?: string) {
   const opciones = [
     ...(datos.email ? [{ email: datos.email }] : []),
@@ -78,6 +80,8 @@ async function camposOcupados(db: DB, datos: Identificadores, excluirId?: string
     campos.username = 'Este usuario ya existe. Elegí otro.';
   return campos;
 }
+
+//Esta función solo consulta y devuelve mensajes: no crea usuarios, no modifica datos y no lanza por sí misma un error por duplicados
 async function guardarConUnicidad<T>(
   db: DB,
   datos: Identificadores,
@@ -99,8 +103,11 @@ async function guardarConUnicidad<T>(
     throw error;
   }
 }
+
+
 export function exigirSesion(db: DB): RequestHandler {
   return async (req, _res, next) => {
+    //Authorization: Bearer <64 caracteres hexadecimales>
     const token = req.headers.authorization?.match(/^Bearer ([a-f0-9]{64})$/)?.[1];
     if (!token) throw new ErrorHTTP(401, 'SESION_INVALIDA', 'Iniciá sesión para continuar.');
     const sesion = await db.sesion.findUnique({ where: { tokenHash: hashToken(token) } });
@@ -110,6 +117,8 @@ export function exigirSesion(db: DB): RequestHandler {
     next();
   };
 }
+
+
 async function crearSesion(db: Pick<DB, 'sesion'>, usuarioId: string) {
   const token = nuevoToken();
   const dias = Number(process.env.SESSION_DAYS ?? 7);
@@ -122,8 +131,11 @@ async function crearSesion(db: Pick<DB, 'sesion'>, usuarioId: string) {
       venceEn: new Date(Date.now() + dias * 86400000),
     },
   });
+  //devuelvo el token en texto plano para que el cliente lo guarde; no se guarda en la base de datos
   return token;
 }
+
+
 export function rutasAuth(db: DB) {
   const r = Router();
   r.get('/auth/disponibilidad', async (req, res) => {
@@ -134,6 +146,8 @@ export function rutasAuth(db: DB) {
     exigir(datos.email || datos.username, 'Indicá el email o usuario a comprobar.');
     res.json({ campos: await camposOcupados(db, datos) });
   });
+
+
   r.post('/auth/registro', async (req, res) => {
     const { password: clave, ...datos } = datosUsuario.extend({ password }).parse(req.body);
     const hash = await hashPassword(clave);
@@ -149,6 +163,7 @@ export function rutasAuth(db: DB) {
     );
     res.status(201).json(resultado);
   });
+
   r.post('/auth/login', async (req, res) => {
     const datos = z
       .object({
@@ -163,6 +178,7 @@ export function rutasAuth(db: DB) {
     });
     const valido = usuario
       ? await verificarPassword(datos.password, usuario.passwordHash)
+      //Si no encontró al usuario, igual calcula un hash
       : (await hashPassword(datos.password), false);
     if (!usuario || !valido)
       throw new ErrorHTTP(
@@ -176,12 +192,14 @@ export function rutasAuth(db: DB) {
       usuario: await db.usuario.findUnique({ where: { id: usuario.id }, select: usuarioPublico }),
     });
   });
+
   r.post('/auth/logout', exigirSesion(db), async (req, res) => {
     await db.sesion.deleteMany({
       where: { tokenHash: hashToken(req.headers.authorization!.slice(7)) },
     });
     res.status(204).end();
   });
+
   r.get('/yo', exigirSesion(db), async (req, res) =>
     res.json(
       encontrado(
@@ -189,6 +207,7 @@ export function rutasAuth(db: DB) {
       ),
     ),
   );
+  
   r.patch('/yo', exigirSesion(db), async (req, res) => {
     const datos = datosUsuario.omit({ fechaNacimiento: true }).partial().parse(req.body);
     exigir(Object.keys(datos).length, 'No hay campos para actualizar.');
@@ -206,6 +225,7 @@ export function rutasAuth(db: DB) {
       ),
     );
   });
+  
   r.delete('/yo', exigirSesion(db), async (req, res) => {
     await db.$transaction(async (tx) => {
       await tx.vinoEnCava.deleteMany({ where: { usuarioId: req.usuarioId } });

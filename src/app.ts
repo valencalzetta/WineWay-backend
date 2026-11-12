@@ -8,6 +8,8 @@ import { rutasCatalogo } from './routes/catalogo.js';
 import { rutasPersonales } from './routes/personales.js';
 import { rutasItinerarios } from './routes/rutas.js';
 import { rutasCalendarios } from './routes/calendarios.js';
+
+//se configura la app de express con las rutas, middlewares y el manejo de errores. Se exporta para que sea usada en src/index.ts y en tests.
 export function crearApp(db: DB) {
   const app = express();
   app.disable('x-powered-by');
