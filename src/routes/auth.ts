@@ -62,6 +62,7 @@ const datosUsuario = z
   .strict();
 
 type Identificadores = { email?: string; username?: string };
+
 //excluirId?: un ID opcional para excluir a un usuario de la búsqueda. Sirve cuando alguien edita su propio perfil
 async function camposOcupados(db: DB, datos: Identificadores, excluirId?: string) {
   const opciones = [

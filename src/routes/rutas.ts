@@ -20,6 +20,7 @@ import {
   totalesRuta,
 } from '../utils/reglas.js';
 type Tx = Prisma.TransactionClient;
+//Objeto Zod que valida los datos de la ruta (req.body)
 const datosRuta = z
   .object({
     nombre: texto,
@@ -30,7 +31,7 @@ const datosRuta = z
     presupuestoPersonaCentavos: dinero,
     parametros: z.record(z.string(), z.json()).optional(),
   })
-  .strict();
+  .strict(); //Se rechaza cualquier campo que no este declarado
 const datosVisita = z
   .object({
     experienciaId: id,

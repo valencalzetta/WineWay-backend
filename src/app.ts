@@ -25,10 +25,10 @@ export function crearApp(db: DB) {
         ),
     }),
   );
-  app.use(express.json({ limit: '100kb' }));
+  app.use(express.json({ limit: '100kb' })); //Middleware, Agarra el JSON que se recibe por HTTP y lo convierte en req.body
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
   app.use('/api', rutasAuth(db), rutasCatalogo(db), rutasPersonales(db));
-  app.use('/api/rutas', rutasItinerarios(db));
+  app.use('/api/rutas', rutasItinerarios(db)); //Enruta a rutas.ts
   app.use('/api', rutasCalendarios(db));
   app.use((_req, res) =>
     res.status(404).json({ error: { codigo: 'NO_ENCONTRADO', mensaje: 'Endpoint inexistente.' } }),
